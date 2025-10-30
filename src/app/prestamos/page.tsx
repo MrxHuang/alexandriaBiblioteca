@@ -22,7 +22,7 @@ export default function PrestamosPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ libroId: 0, usuarioId: 0 });
-  const { isAuthenticated, isAdmin, loading: authLoading } = useAuth();
+  const { isAuthenticated, isAdmin, isLector, loading: authLoading, user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -32,16 +32,22 @@ export default function PrestamosPage() {
   }, [isAuthenticated, authLoading, router]);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (!authLoading && isAuthenticated && (isAdmin || (isLector && user))) {
+      fetchData();
+    }
+  }, [isAdmin, isLector, user, isAuthenticated, authLoading]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       const [prestamosResp, librosResp, usuariosResp] = await Promise.all([
-        prestamosService.getAll({ size: 100 }),
+        // LECTOR: solo sus préstamos; ADMIN: todos
+        isLector && user
+          ? prestamosService.getAll({ size: 100, usuarioId: user.id })
+          : prestamosService.getAll({ size: 100 }),
         librosService.getAllNoPagination(),
-        usuariosService.getAllNoPagination(),
+        // Sólo ADMIN puede consumir /usuarios/all (evita 403)
+        isAdmin ? usuariosService.getAllNoPagination() : Promise.resolve([] as Usuario[]),
       ]);
       setPrestamos(prestamosResp.content);
       setLibros(librosResp);
@@ -56,7 +62,8 @@ export default function PrestamosPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await prestamosService.create({ libroId: formData.libroId, usuarioId: formData.usuarioId });
+      const usuarioId = isAdmin ? formData.usuarioId : (user?.id ?? 0);
+      await prestamosService.create({ libroId: formData.libroId, usuarioId });
       setIsModalOpen(false);
       setFormData({ libroId: 0, usuarioId: 0 });
       fetchData();
@@ -175,7 +182,7 @@ export default function PrestamosPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Crear Préstamo"
+        title={isAdmin ? "Crear Préstamo" : "Solicitar Préstamo"}
         size="md"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -194,26 +201,28 @@ export default function PrestamosPage() {
             </select>
           </div>
 
-          <div className="space-y-3">
-            <label className="block text-lg font-medium text-gray-900">Usuario</label>
-            <select
-              value={formData.usuarioId}
-              onChange={(e) => setFormData({ ...formData, usuarioId: parseInt(e.target.value) })}
-              className="w-full px-6 py-4 text-lg bg-white border-2 border-gray-300 focus:border-black focus:outline-none transition-colors"
-              required
-            >
-              <option value={0}>Selecciona un usuario</option>
-              {usuarios.map((u) => (
-                <option key={u.id} value={u.id}>{u.nombre}</option>
-              ))}
-            </select>
-          </div>
+          {isAdmin && (
+            <div className="space-y-3">
+              <label className="block text-lg font-medium text-gray-900">Usuario</label>
+              <select
+                value={formData.usuarioId}
+                onChange={(e) => setFormData({ ...formData, usuarioId: parseInt(e.target.value) })}
+                className="w-full px-6 py-4 text-lg bg-white border-2 border-gray-300 focus:border-black focus:outline-none transition-colors"
+                required
+              >
+                <option value={0}>Selecciona un usuario</option>
+                {usuarios.map((u) => (
+                  <option key={u.id} value={u.id}>{u.nombre}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="flex space-x-4 pt-6">
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)} className="flex-1">
               Cancelar
             </Button>
-            <Button type="submit" className="flex-1">Crear</Button>
+            <Button type="submit" className="flex-1">{isAdmin ? 'Crear' : 'Solicitar'}</Button>
           </div>
         </form>
       </Modal>

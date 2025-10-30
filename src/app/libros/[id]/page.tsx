@@ -50,7 +50,14 @@ export default function LibroDetailPage() {
       router.push('/prestamos');
     } catch (e) {
       console.error('Error creando préstamo', e);
-      alert('No se pudo crear el préstamo');
+      const anyErr = e as any;
+      const message = anyErr?.response?.data?.message as string | undefined;
+      if (message) {
+        // Mensajes del backend: libro prestado o límite de préstamos
+        alert(message);
+      } else {
+        alert('No se pudo crear el préstamo');
+      }
     } finally {
       setCreating(false);
     }
