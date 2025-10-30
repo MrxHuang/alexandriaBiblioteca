@@ -19,6 +19,56 @@
   }
 }
 
+@layer base {
+  * {
+    @apply border-gray-300;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+  
+  input::placeholder, textarea::placeholder {
+    /* Fuerza alto contraste en placeholders en todos los inputs */
+    color: rgb(75 85 99); /* tailwind gray-600 */
+    opacity: 1; /* evita aclarado por defecto del navegador */
+  }
+  
+  h1 {
+    @apply text-5xl font-bold tracking-tight text-gray-900;
+  }
+  
+  h2 {
+    @apply text-4xl font-semibold tracking-tight text-gray-900;
+  }
+  
+  h3 {
+    @apply text-3xl font-semibold text-gray-900;
+  }
+  
+  p {
+    @apply text-lg leading-relaxed text-gray-800;
+  }
+}
+
+@layer utilities {
+  @keyframes shake {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+      transform: translateX(-4px);
+    }
+    20%, 40%, 60%, 80% {
+      transform: translateX(4px);
+    }
+  }
+  
+  .animate-shake {
+    animation: shake 0.5s ease-in-out;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
