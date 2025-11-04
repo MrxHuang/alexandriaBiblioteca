@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { LoadingScreen } from '@/components/ui/Spinner';
+import { Skeleton, SkeletonPrestamoCard } from '@/components/ui/Skeleton';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { prestamosService } from '@/lib/services/prestamos.service';
 import { Prestamo } from '@/lib/types';
@@ -73,7 +74,7 @@ export default function PerfilPage() {
   const prestamosActivos = prestamos.filter((p) => !p.devuelto);
   const prestamosDevueltos = prestamos.filter((p) => p.devuelto);
 
-  if (loading || authLoading || !user) {
+  if (authLoading || !user) {
     return <LoadingScreen />;
   }
 
@@ -108,85 +109,115 @@ export default function PerfilPage() {
               <CardContent className="space-y-6">
                 {/* Avatar */}
                 <div className="flex justify-center">
-                  <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-200 shadow-lg bg-gray-100">
-                    <img
-                      src={avatarUrl}
-                      alt={`Avatar de ${user.nombre}`}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // Fallback a iniciales si falla la imagen
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        const parent = target.parentElement;
-                        if (parent) {
-                          parent.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-400 to-gray-600 text-white text-4xl font-bold">${user.nombre.charAt(0).toUpperCase()}</div>`;
-                        }
-                      }}
-                    />
-                  </div>
+                  {loading ? (
+                    <Skeleton variant="circular" width="8rem" height="8rem" />
+                  ) : (
+                    <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-200 shadow-lg bg-gray-100">
+                      <img
+                        src={avatarUrl}
+                        alt={`Avatar de ${user.nombre}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback a iniciales si falla la imagen
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            parent.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-400 to-gray-600 text-white text-4xl font-bold">${user.nombre.charAt(0).toUpperCase()}</div>`;
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Nombre */}
                 <div className="space-y-2">
-                  <div className="flex items-center space-x-3 text-gray-700">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <User className="w-5 h-5 text-gray-600" />
+                  {loading ? (
+                    <div className="space-y-2">
+                      <Skeleton height="1rem" width="40%" />
+                      <Skeleton height="1.5rem" width="70%" />
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-600 font-medium">Nombre</p>
-                      <span className="text-lg font-semibold text-gray-900">{user.nombre}</span>
+                  ) : (
+                    <div className="flex items-center space-x-3 text-gray-700">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                        <User className="w-5 h-5 text-gray-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 font-medium">Nombre</p>
+                        <span className="text-lg font-semibold text-gray-900">{user.nombre}</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Email */}
                 <div className="space-y-2">
-                  <div className="flex items-center space-x-3 text-gray-700">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <Mail className="w-5 h-5 text-gray-600" />
+                  {loading ? (
+                    <div className="space-y-2">
+                      <Skeleton height="1rem" width="50%" />
+                      <Skeleton height="1.5rem" width="80%" />
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-600 font-medium">Correo electrónico</p>
-                      <span className="text-lg font-semibold text-gray-900">{user.email}</span>
+                  ) : (
+                    <div className="flex items-center space-x-3 text-gray-700">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                        <Mail className="w-5 h-5 text-gray-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 font-medium">Correo electrónico</p>
+                        <span className="text-lg font-semibold text-gray-900">{user.email}</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Fecha de creación */}
                 <div className="space-y-2">
-                  <div className="flex items-center space-x-3 text-gray-700">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <Calendar className="w-5 h-5 text-gray-600" />
+                  {loading ? (
+                    <div className="space-y-2">
+                      <Skeleton height="1rem" width="45%" />
+                      <Skeleton height="1.5rem" width="60%" />
+                      <Skeleton height="0.875rem" width="40%" />
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-600 font-medium">Cuenta creada</p>
-                      <span className="text-lg font-semibold text-gray-900">
-                        {accountCreationDate.toLocaleDateString('es-ES', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </span>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {formatTimeAgo(accountCreationDate)}
-                      </p>
+                  ) : (
+                    <div className="flex items-center space-x-3 text-gray-700">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                        <Calendar className="w-5 h-5 text-gray-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 font-medium">Cuenta creada</p>
+                        <span className="text-lg font-semibold text-gray-900">
+                          {accountCreationDate.toLocaleDateString('es-ES', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </span>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {formatTimeAgo(accountCreationDate)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Rol */}
                 <div className="pt-4 border-t-2 border-gray-200">
-                  <div className="flex items-center justify-center">
-                    <span
-                      className="px-4 py-2 text-sm font-semibold rounded-full uppercase tracking-wide"
-                      style={{
-                        backgroundColor: user.rol === 'ADMIN' ? '#dc2626' : '#2563eb',
-                        color: '#fff',
-                      }}
-                    >
-                      {user.rol}
-                    </span>
-                  </div>
+                  {loading ? (
+                    <Skeleton height="2rem" width="6rem" className="mx-auto rounded-full" />
+                  ) : (
+                    <div className="flex items-center justify-center">
+                      <span
+                        className="px-4 py-2 text-sm font-semibold rounded-full uppercase tracking-wide"
+                        style={{
+                          backgroundColor: user.rol === 'ADMIN' ? '#dc2626' : '#2563eb',
+                          color: '#fff',
+                        }}
+                      >
+                        {user.rol}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -210,7 +241,13 @@ export default function PerfilPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                {prestamosActivos.length === 0 ? (
+                {loading ? (
+                  <div className="space-y-4">
+                    {[...Array(2)].map((_, i) => (
+                      <SkeletonPrestamoCard key={i} />
+                    ))}
+                  </div>
+                ) : prestamosActivos.length === 0 ? (
                   <div className="text-center py-12">
                     <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-400" strokeWidth={1.5} />
                     <p className="text-gray-600 text-lg">No tienes libros prestados actualmente</p>
@@ -258,7 +295,13 @@ export default function PerfilPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                {prestamosDevueltos.length === 0 ? (
+                {loading ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <SkeletonPrestamoCard key={i} />
+                    ))}
+                  </div>
+                ) : prestamosDevueltos.length === 0 ? (
                   <div className="text-center py-12">
                     <CheckCircle className="w-16 h-16 mx-auto mb-4 text-gray-400" strokeWidth={1.5} />
                     <p className="text-gray-600 text-lg">No has devuelto ningún libro aún</p>

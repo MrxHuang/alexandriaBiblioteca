@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { LoadingScreen } from '@/components/ui/Spinner';
+import { SkeletonGrid, SkeletonSearchBar } from '@/components/ui/Skeleton';
 import { Search, Plus, BookOpen, User, Calendar, Filter, X } from 'lucide-react';
 import { librosService } from '@/lib/services/libros.service';
 import { autoresService } from '@/lib/services/autores.service';
@@ -236,12 +237,12 @@ export default function LibrosPage() {
     setIsModalOpen(true);
   };
 
-  if (loading || authLoading) {
+  if (authLoading) {
     return <LoadingScreen />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="min-h-screen b-linear-to-br from-gray-50 via-white to-gray-50">
       <Header />
 
       <main className="max-w-7xl mx-auto px-8 pt-20 pb-16">
@@ -283,40 +284,44 @@ export default function LibrosPage() {
 
           <div className="space-y-4">
             {/* Search Bar */}
-            <motion.form
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              onSubmit={handleSearch}
-              className="relative"
-            >
-              <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-600 pointer-events-none z-10" />
-              <input
-                type="text"
-                placeholder="Buscar por título, autor o ISBN..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-16 pr-24 py-6 text-xl bg-white border-2 border-gray-300 focus:border-gray-900 focus:outline-none transition-colors placeholder:text-gray-500 text-gray-900 font-medium"
-              />
-              {searchInput && (
-                <button
-                  type="button"
-                  onClick={handleSearchClear}
-                  className="absolute right-16 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-                  aria-label="Limpiar búsqueda"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-              <button
-                type="submit"
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
+            {loading ? (
+              <SkeletonSearchBar />
+            ) : (
+              <motion.form
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                onSubmit={handleSearch}
+                className="relative"
               >
-                Buscar
-              </button>
-            </motion.form>
+                <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-600 pointer-events-none z-10" />
+                <input
+                  type="text"
+                  placeholder="Buscar por título, autor o ISBN..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="w-full pl-16 pr-24 py-6 text-xl bg-white border-2 border-gray-300 focus:border-gray-900 focus:outline-none transition-all duration-300 placeholder:text-gray-500 text-gray-900 font-medium hover:border-gray-400"
+                />
+                {searchInput && (
+                  <button
+                    type="button"
+                    onClick={handleSearchClear}
+                    className="absolute right-16 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200 cursor-pointer"
+                    aria-label="Limpiar búsqueda"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
+                >
+                  Buscar
+                </button>
+              </motion.form>
+            )}
 
             {/* Filters */}
             <motion.div
@@ -362,7 +367,7 @@ export default function LibrosPage() {
                           setSelectedAutorId(e.target.value ? parseInt(e.target.value) : null);
                           setCurrentPage(0);
                         }}
-                        className="w-full px-4 py-3 text-base bg-white border-2 border-gray-200 focus:border-gray-900 focus:outline-none transition-colors cursor-pointer"
+                        className="w-full px-4 py-3 text-base bg-white border-2 border-gray-200 focus:border-gray-900 focus:outline-none transition-all duration-300 hover:border-gray-300 focus:shadow-lg focus:shadow-gray-900/10 focus:ring-2 focus:ring-gray-900/10 cursor-pointer"
                       >
                         <option value="">Todos los autores</option>
                         {autores.map((autor) => (
@@ -384,7 +389,7 @@ export default function LibrosPage() {
                           setSelectedAnio(e.target.value ? parseInt(e.target.value) : null);
                           setCurrentPage(0);
                         }}
-                        className="w-full px-4 py-3 text-base bg-white border-2 border-gray-200 focus:border-gray-900 focus:outline-none transition-colors cursor-pointer"
+                        className="w-full px-4 py-3 text-base bg-white border-2 border-gray-200 focus:border-gray-900 focus:outline-none transition-all duration-300 hover:border-gray-300 focus:shadow-lg focus:shadow-gray-900/10 focus:ring-2 focus:ring-gray-900/10 cursor-pointer"
                       >
                         <option value="">Todos los años</option>
                         {availableYears.map((year) => (
@@ -402,7 +407,9 @@ export default function LibrosPage() {
         </motion.div>
 
         {/* Books Grid */}
-        {libros.length === 0 ? (
+        {loading ? (
+          <SkeletonGrid count={6} />
+        ) : libros.length === 0 ? (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -433,7 +440,7 @@ export default function LibrosPage() {
                     <CardTitle className="line-clamp-2 group-hover:text-gray-900 transition-colors text-2xl font-bold text-gray-900 leading-tight">
                     {libro.titulo}
                   </CardTitle>
-                    <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:from-gray-200 group-hover:to-gray-300 transition-all duration-300">
+                    <div className="shrink-0 w-12 h-12 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:from-gray-200 group-hover:to-gray-300 transition-all duration-300">
                       <BookOpen className="w-6 h-6 text-gray-600" />
                     </div>
                   </div>
@@ -441,7 +448,7 @@ export default function LibrosPage() {
                 <CardContent className="flex-1 flex flex-col">
                   <div className="space-y-4 flex-1">
                     <div className="flex items-center space-x-3 text-gray-700 group-hover:text-gray-900 transition-colors">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors">
+                      <div className="shrink-0 w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors">
                         <User className="w-4 h-4 text-gray-600" />
                       </div>
                       <span className="text-base font-medium leading-relaxed">
@@ -451,7 +458,7 @@ export default function LibrosPage() {
                       </span>
                     </div>
                     <div className="flex items-center space-x-3 text-gray-700 group-hover:text-gray-900 transition-colors">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors">
+                      <div className="shrink-0 w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors">
                         <Calendar className="w-4 h-4 text-gray-600" />
                       </div>
                       <span className="text-base font-medium">{libro.anio}</span>
@@ -547,7 +554,7 @@ export default function LibrosPage() {
             <select
               value={formData.autorId}
               onChange={(e) => setFormData({ ...formData, autorId: parseInt(e.target.value) })}
-              className="w-full px-6 py-4 text-lg bg-white border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+              className="w-full px-6 py-4 text-lg bg-white border-2 border-gray-200 focus:border-black focus:outline-none transition-all duration-300 hover:border-gray-300 focus:shadow-lg focus:shadow-gray-900/10 focus:ring-2 focus:ring-gray-900/10 cursor-pointer"
               required
             >
               <option value="0">Selecciona un autor</option>

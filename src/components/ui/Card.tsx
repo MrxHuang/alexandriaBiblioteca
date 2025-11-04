@@ -14,9 +14,21 @@ export function Card({ children, className, hover = false, onClick }: CardProps)
       className={cn(
         'bg-white border-2 border-gray-200 p-8 rounded-xl',
         'shadow-lg shadow-gray-200/50',
-        'transition-all duration-300',
+        'transition-all duration-300 ease-out',
         'backdrop-blur-sm',
-        hover && 'hover:border-gray-400 hover:shadow-2xl hover:shadow-gray-300/60 hover:-translate-y-1 cursor-pointer',
+        'relative overflow-hidden',
+        // Hover states mejorados
+        hover && [
+          'cursor-pointer',
+          'hover:border-gray-300',
+          'hover:shadow-2xl hover:shadow-gray-300/70',
+          'hover:-translate-y-2',
+          'hover:scale-[1.02]',
+          // Efecto de brillo sutil en hover
+          'before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent',
+          'before:-translate-x-full before:transition-transform before:duration-700',
+          'hover:before:translate-x-full'
+        ],
         onClick && 'cursor-pointer',
         className
       )}

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { LoadingScreen } from '@/components/ui/Spinner';
+import { SkeletonAutorCard, SkeletonSearchBar, Skeleton } from '@/components/ui/Skeleton';
 import { Search, Plus, User, Globe, Calendar, BookOpen, X } from 'lucide-react';
 import { autoresService } from '@/lib/services/autores.service';
 import { librosService } from '@/lib/services/libros.service';
@@ -130,7 +131,7 @@ export default function AutoresPage() {
     }
   };
 
-  if (loading || authLoading) {
+  if (authLoading) {
     return <LoadingScreen />;
   }
 
@@ -143,9 +144,11 @@ export default function AutoresPage() {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-6xl font-bold mb-4">Autores</h1>
-              <p className="text-2xl text-gray-800">{autores.length} autores registrados</p>
+              <p className="text-2xl text-gray-800">
+                {loading ? '...' : `${autores.length} autores registrados`}
+              </p>
             </div>
-            {isAdmin && (
+            {isAdmin && !loading && (
               <Button
                 size="lg"
                 onClick={() => {
@@ -161,18 +164,30 @@ export default function AutoresPage() {
           </div>
 
           <div className="relative">
-            <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-600" />
-            <input
-              type="text"
-              placeholder="Buscar por nombre o nacionalidad..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-16 pr-6 py-6 text-xl bg-white border-2 border-gray-300 focus:border-black focus:outline-none transition-colors placeholder:text-gray-600"
-            />
+            {loading ? (
+              <SkeletonSearchBar />
+            ) : (
+              <>
+                <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-600 z-10" />
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre o nacionalidad..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-16 pr-6 py-6 text-xl bg-white border-2 border-gray-300 focus:border-black focus:outline-none transition-all duration-300 placeholder:text-gray-600 hover:border-gray-400"
+                />
+              </>
+            )}
           </div>
         </div>
 
-        {autores.length === 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(6)].map((_, i) => (
+              <SkeletonAutorCard key={i} />
+            ))}
+          </div>
+        ) : autores.length === 0 ? (
           <div className="text-center py-24">
             <User className="w-24 h-24 mx-auto mb-6 text-gray-500" strokeWidth={1.5} />
             <p className="text-2xl text-gray-700">No se encontraron autores</p>
@@ -324,8 +339,13 @@ export default function AutoresPage() {
         size="lg"
       >
         {loadingLibros ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-gray-500">Cargando libros...</div>
+          <div className="space-y-4 py-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-gray-50 rounded-lg p-4 border-2 border-gray-200">
+                <Skeleton height="1.5rem" width="70%" className="mb-2" />
+                <Skeleton height="1rem" width="50%" />
+              </div>
+            ))}
           </div>
         ) : selectedAutorLibros.length === 0 ? (
           <div className="text-center py-12">

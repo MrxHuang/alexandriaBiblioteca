@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { LoadingScreen } from '@/components/ui/Spinner';
+import { SkeletonPrestamoCard } from '@/components/ui/Skeleton';
 import { BookMarked, User, BookOpen, CalendarCheck2 } from 'lucide-react';
 import { prestamosService } from '@/lib/services/prestamos.service';
 import { librosService } from '@/lib/services/libros.service';
@@ -104,7 +105,7 @@ export default function PrestamosPage() {
     }
   };
 
-  if (loading || authLoading) {
+  if (authLoading) {
     return <LoadingScreen />;
   }
 
@@ -122,9 +123,11 @@ export default function PrestamosPage() {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-6xl font-bold mb-4">Préstamos</h1>
-              <p className="text-2xl text-gray-800">{prestamos.length} registros</p>
+              <p className="text-2xl text-gray-800">
+                {loading ? '...' : `${prestamos.length} registros`}
+              </p>
             </div>
-            {isAdmin && (
+            {isAdmin && !loading && (
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -142,7 +145,13 @@ export default function PrestamosPage() {
           </div>
         </motion.div>
 
-        {prestamos.length === 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(6)].map((_, i) => (
+              <SkeletonPrestamoCard key={i} />
+            ))}
+          </div>
+        ) : prestamos.length === 0 ? (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -243,7 +252,7 @@ export default function PrestamosPage() {
             <select
               value={formData.libroId}
               onChange={(e) => setFormData({ ...formData, libroId: parseInt(e.target.value) })}
-              className="w-full px-6 py-4 text-lg bg-white border-2 border-gray-300 focus:border-black focus:outline-none transition-colors"
+              className="w-full px-6 py-4 text-lg bg-white border-2 border-gray-300 focus:border-black focus:outline-none transition-all duration-300 hover:border-gray-400 focus:shadow-lg focus:shadow-gray-900/10 focus:ring-2 focus:ring-gray-900/10 cursor-pointer"
               required
             >
               <option value={0}>Selecciona un libro</option>
@@ -259,7 +268,7 @@ export default function PrestamosPage() {
               <select
                 value={formData.usuarioId}
                 onChange={(e) => setFormData({ ...formData, usuarioId: parseInt(e.target.value) })}
-                className="w-full px-6 py-4 text-lg bg-white border-2 border-gray-300 focus:border-black focus:outline-none transition-colors"
+                className="w-full px-6 py-4 text-lg bg-white border-2 border-gray-300 focus:border-black focus:outline-none transition-all duration-300 hover:border-gray-400 focus:shadow-lg focus:shadow-gray-900/10 focus:ring-2 focus:ring-gray-900/10 cursor-pointer"
                 required
               >
                 <option value={0}>Selecciona un usuario</option>

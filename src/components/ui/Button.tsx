@@ -14,13 +14,67 @@ export function Button({
   children,
   ...props
 }: ButtonProps) {
-  const baseStyles = 'font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer relative overflow-hidden group';
+  const baseStyles = [
+    'font-medium',
+    'transition-all duration-300 ease-out',
+    'disabled:opacity-50 disabled:cursor-not-allowed',
+    'cursor-pointer',
+    'relative overflow-hidden',
+    'group',
+    'focus:outline-none focus:ring-2 focus:ring-offset-2',
+    // Transiciones suaves mejoradas
+    'transform-gpu',
+    'will-change-transform',
+  ].join(' ');
   
   const variants = {
-    primary: 'bg-black text-white hover:bg-gray-800 active:bg-gray-900 hover:scale-[1.02] active:scale-[0.98]',
-    secondary: 'bg-white text-black border-2 border-black hover:bg-black hover:text-white active:bg-gray-900',
-    ghost: 'bg-transparent text-black hover:bg-gray-100 active:bg-gray-200',
-    danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 hover:scale-[1.02] active:scale-[0.98]',
+    primary: [
+      'bg-black text-white',
+      'hover:bg-gray-800',
+      'active:bg-gray-900',
+      'hover:scale-[1.03]',
+      'active:scale-[0.97]',
+      'hover:shadow-lg hover:shadow-black/20',
+      'focus:ring-gray-500',
+      // Efecto ripple
+      'before:absolute before:inset-0 before:bg-white before:opacity-0',
+      'before:transition-opacity before:duration-300',
+      'hover:before:opacity-10',
+      'active:before:opacity-20',
+    ].join(' '),
+    secondary: [
+      'bg-white text-black border-2 border-black',
+      'hover:bg-black hover:text-white',
+      'active:bg-gray-900',
+      'hover:scale-[1.03]',
+      'active:scale-[0.97]',
+      'hover:shadow-lg hover:shadow-gray-500/20',
+      'focus:ring-gray-500',
+      'transition-colors duration-300',
+    ].join(' '),
+    ghost: [
+      'bg-transparent text-black',
+      'hover:bg-gray-100',
+      'active:bg-gray-200',
+      'hover:scale-[1.02]',
+      'active:scale-[0.98]',
+      'focus:ring-gray-400',
+      'transition-colors duration-200',
+    ].join(' '),
+    danger: [
+      'bg-red-600 text-white',
+      'hover:bg-red-700',
+      'active:bg-red-800',
+      'hover:scale-[1.03]',
+      'active:scale-[0.97]',
+      'hover:shadow-lg hover:shadow-red-500/30',
+      'focus:ring-red-500',
+      // Efecto ripple
+      'before:absolute before:inset-0 before:bg-white before:opacity-0',
+      'before:transition-opacity before:duration-300',
+      'hover:before:opacity-10',
+      'active:before:opacity-20',
+    ].join(' '),
   };
 
   const sizes = {
@@ -39,7 +93,9 @@ export function Button({
       )}
       {...props}
     >
-      <span className="relative z-10">{children}</span>
+      <span className="relative z-10 flex items-center justify-center gap-2">
+        {children}
+      </span>
     </button>
   );
 }

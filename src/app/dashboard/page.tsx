@@ -12,6 +12,8 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Prestamo, Libro } from '@/lib/types';
 import { LoadingScreen } from '@/components/ui/Spinner';
+import { SkeletonStatCard, SkeletonLibroCard } from '@/components/ui/Skeleton';
+import { StatCard } from '@/components/ui/StatCard';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({
@@ -20,9 +22,11 @@ export default function DashboardPage() {
     totalPrestamos: 0,
     totalUsuarios: 0,
     prestamosPendientes: 0,
+    prestamosDevueltos: 0,
   });
   const [misPrestamos, setMisPrestamos] = useState<Prestamo[]>([]);
   const [librosRecientes, setLibrosRecientes] = useState<Libro[]>([]);
+  const [prestamosRecientes, setPrestamosRecientes] = useState<Prestamo[]>([]);
   const [loading, setLoading] = useState(true);
   const { isAuthenticated, loading: authLoading, user, isAdmin, isLector } = useAuth();
   const router = useRouter();
@@ -38,40 +42,49 @@ export default function DashboardPage() {
       try {
         if (isAdmin) {
           // Para admin: estadísticas globales
-          const [librosData, prestamosData, prestamosActivosData, usuariosData] = await Promise.all([
+          const [librosData, prestamosData, prestamosActivosData, prestamosDevueltosData, usuariosData, prestamosRecentesData] = await Promise.all([
             librosService.getAll({ page: 0, size: 1 }),
             prestamosService.getAll({ page: 0, size: 1 }),
             prestamosService.getAll({ page: 0, size: 1, devuelto: false }),
+            prestamosService.getAll({ page: 0, size: 1, devuelto: true }),
             usuariosService.getAll({ page: 0, size: 1 }),
+            prestamosService.getAll({ page: 0, size: 10 }),
           ]);
 
           setStats({
             totalLibros: librosData.totalElements,
             totalPrestamos: prestamosData.totalElements,
             prestamosActivos: prestamosActivosData.totalElements,
+            prestamosDevueltos: prestamosDevueltosData.totalElements,
             totalUsuarios: usuariosData.totalElements,
             prestamosPendientes: prestamosActivosData.totalElements,
           });
+
+          setPrestamosRecientes(prestamosRecentesData.content);
         } else {
           // Para lector: estadísticas personales
           if (!user?.id) return;
 
           const [librosData, misPrestamosData, misPrestamosActivosData, misPrestamosDevueltosData] = await Promise.all([
             librosService.getAll({ page: 0, size: 1 }),
-            prestamosService.getAll({ page: 0, size: 1, usuarioId: user.id }),
-            prestamosService.getAll({ page: 0, size: 5, usuarioId: user.id, devuelto: false }),
-            prestamosService.getAll({ page: 0, size: 1, usuarioId: user.id, devuelto: true }),
+            prestamosService.getAll({ page: 0, size: 100, usuarioId: user.id }),
+            prestamosService.getAll({ page: 0, size: 100, usuarioId: user.id, devuelto: false }),
+            prestamosService.getAll({ page: 0, size: 100, usuarioId: user.id, devuelto: true }),
           ]);
+
+          // Filtrar manualmente para asegurar que solo contamos préstamos activos
+          const prestamosActivosReales = misPrestamosActivosData.content.filter(p => !p.devuelto);
 
           setStats({
             totalLibros: librosData.totalElements,
             totalPrestamos: misPrestamosData.totalElements,
-            prestamosActivos: misPrestamosActivosData.totalElements,
+            prestamosActivos: prestamosActivosReales.length,
+            prestamosDevueltos: misPrestamosDevueltosData.totalElements,
             totalUsuarios: 0,
-            prestamosPendientes: misPrestamosActivosData.totalElements,
+            prestamosPendientes: prestamosActivosReales.length,
           });
 
-          setMisPrestamos(misPrestamosActivosData.content);
+          setMisPrestamos(prestamosActivosReales);
         }
 
         // Libros recientes para ambos
@@ -106,7 +119,7 @@ export default function DashboardPage() {
     return 'Explora nuestro catálogo y encuentra tu próximo libro favorito';
   };
 
-  if (loading || authLoading) {
+  if (authLoading) {
     return <LoadingScreen />;
   }
 
@@ -128,9 +141,11 @@ export default function DashboardPage() {
             </div>
             <div>
               <h1 className="text-5xl font-bold text-gray-900">
-                {getGreeting()}, {user?.nombre?.split(' ')[0] || user?.nombre}
+                {loading ? 'Cargando...' : `${getGreeting()}, ${user?.nombre?.split(' ')[0] || user?.nombre}`}
               </h1>
-              <p className="text-xl text-gray-600 mt-2">{getPersonalizedMessage()}</p>
+              <p className="text-xl text-gray-600 mt-2">
+                {loading ? 'Obteniendo información...' : getPersonalizedMessage()}
+              </p>
             </div>
           </div>
         </motion.div>
@@ -142,169 +157,92 @@ export default function DashboardPage() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16"
         >
-          {isAdmin ? (
+          {loading ? (
+            <>
+              {[...Array(4)].map((_, i) => (
+                <SkeletonStatCard key={i} />
+              ))}
+            </>
+          ) : isAdmin ? (
             <>
               {/* Admin Stats */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                whileHover={{ scale: 1.05 }}
-              >
-                <Card hover className="bg-gradient-to-br from-white to-gray-50/50">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-xl font-bold">Total Libros</CardTitle>
-                      <Library className="w-10 h-10 text-gray-600" strokeWidth={1.5} />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-4xl font-bold">{stats.totalLibros}</p>
-                    <p className="text-sm text-gray-600 mt-2">En el catálogo</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                whileHover={{ scale: 1.05 }}
-              >
-                <Card hover className="bg-gradient-to-br from-white to-gray-50/50">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-xl font-bold">Usuarios</CardTitle>
-                      <Users className="w-10 h-10 text-gray-600" strokeWidth={1.5} />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-4xl font-bold">{stats.totalUsuarios}</p>
-                    <p className="text-sm text-gray-600 mt-2">Usuarios registrados</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                whileHover={{ scale: 1.05 }}
-              >
-                <Card hover className="bg-gradient-to-br from-white to-gray-50/50">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-xl font-bold">Préstamos Activos</CardTitle>
-                      <Clock className="w-10 h-10 text-blue-600" strokeWidth={1.5} />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-4xl font-bold text-blue-600">{stats.prestamosActivos}</p>
-                    <p className="text-sm text-gray-600 mt-2">Pendientes de devolución</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.6 }}
-                whileHover={{ scale: 1.05 }}
-              >
-                <Card hover className="bg-gradient-to-br from-white to-gray-50/50">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-xl font-bold">Total Préstamos</CardTitle>
-                      <TrendingUp className="w-10 h-10 text-gray-600" strokeWidth={1.5} />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-4xl font-bold">{stats.totalPrestamos}</p>
-                    <p className="text-sm text-gray-600 mt-2">Históricos</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
+              <StatCard
+                title="Total Libros"
+                value={stats.totalLibros}
+                subtitle="En el catálogo"
+                icon={Library}
+                iconColor="text-gray-600"
+              />
+              <StatCard
+                title="Usuarios"
+                value={stats.totalUsuarios}
+                subtitle="Usuarios registrados"
+                icon={Users}
+                iconColor="text-gray-600"
+              />
+              <StatCard
+                title="Préstamos Activos"
+                value={stats.prestamosActivos}
+                subtitle="Pendientes de devolución"
+                icon={Clock}
+                iconColor="text-blue-600"
+              />
+              <StatCard
+                title="Total Préstamos"
+                value={stats.totalPrestamos}
+                subtitle="Históricos"
+                icon={TrendingUp}
+                iconColor="text-gray-600"
+              />
             </>
           ) : (
             <>
               {/* Lector Stats */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                whileHover={{ scale: 1.05 }}
-              >
-                <Card hover className="bg-gradient-to-br from-white to-gray-50/50">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-xl font-bold">Mis Préstamos</CardTitle>
-                      <BookMarked className="w-10 h-10 text-gray-600" strokeWidth={1.5} />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-4xl font-bold">{stats.prestamosActivos}</p>
-                    <p className="text-sm text-gray-600 mt-2">Actualmente en préstamo</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                whileHover={{ scale: 1.05 }}
-              >
-                <Card hover className="bg-gradient-to-br from-white to-gray-50/50">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-xl font-bold">Total Préstamos</CardTitle>
-                      <TrendingUp className="w-10 h-10 text-gray-600" strokeWidth={1.5} />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-4xl font-bold">{stats.totalPrestamos}</p>
-                    <p className="text-sm text-gray-600 mt-2">Histórico personal</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                whileHover={{ scale: 1.05 }}
-              >
-                <Card hover className="bg-gradient-to-br from-white to-gray-50/50">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-xl font-bold">Libros Disponibles</CardTitle>
-                      <BookOpen className="w-10 h-10 text-gray-600" strokeWidth={1.5} />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-4xl font-bold">{stats.totalLibros}</p>
-                    <p className="text-sm text-gray-600 mt-2">En el catálogo</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
+              <StatCard
+                title="Mis Préstamos"
+                value={stats.prestamosActivos}
+                subtitle="Actualmente en préstamo"
+                icon={BookMarked}
+                iconColor="text-gray-600"
+              />
+              <StatCard
+                title="Total Préstamos"
+                value={stats.totalPrestamos}
+                subtitle="Histórico personal"
+                icon={TrendingUp}
+                iconColor="text-gray-600"
+              />
+              <StatCard
+                title="Libros Disponibles"
+                value={stats.totalLibros}
+                subtitle="En el catálogo"
+                icon={BookOpen}
+                iconColor="text-gray-600"
+              />
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.6 }}
-                whileHover={{ scale: 1.05 }}
+                whileHover={{ scale: 1.03, y: -4 }}
               >
                 <Card hover 
                   onClick={() => router.push('/perfil')}
-                  className="bg-gradient-to-br from-white to-gray-50/50 cursor-pointer"
+                  className="bg-gradient-to-br from-white to-gray-50/50 cursor-pointer relative overflow-hidden group"
                 >
-                  <CardHeader className="pb-4">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                  <CardHeader className="pb-4 relative z-10">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-xl font-bold">Mi Perfil</CardTitle>
-                      <Shield className="w-10 h-10 text-gray-600" strokeWidth={1.5} />
+                      <motion.div
+                        whileHover={{ rotate: 360 }}
+                        transition={{ duration: 0.6 }}
+                        className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center"
+                      >
+                        <Shield className="w-6 h-6 text-gray-600" strokeWidth={1.5} />
+                      </motion.div>
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="relative z-10">
                     <p className="text-sm text-gray-600 mt-2">Ver mi información</p>
                   </CardContent>
                 </Card>
@@ -314,7 +252,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* Contenido específico por rol */}
-        {isLector && misPrestamos.length > 0 && (
+        {isLector && !loading && misPrestamos.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -362,7 +300,7 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
-        {/* Libros Recientes / Recomendados */}
+          {/* Libros Recientes / Recomendados */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -374,18 +312,27 @@ export default function DashboardPage() {
               <BookOpen className="w-8 h-8 text-gray-600" />
               {isAdmin ? 'Libros del Catálogo' : 'Libros Recomendados'}
             </h2>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => router.push('/libros')}
-              className="text-gray-600 hover:text-gray-900 font-medium flex items-center gap-2"
-            >
-              Ver todos
-              <ArrowRight className="w-4 h-4" />
-            </motion.button>
+            {!loading && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/libros')}
+                className="text-gray-600 hover:text-gray-900 font-medium flex items-center gap-2 transition-colors duration-200"
+              >
+                Ver todos
+                <ArrowRight className="w-4 h-4" />
+              </motion.button>
+            )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {librosRecientes.slice(0, 6).map((libro, index) => (
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <SkeletonLibroCard key={i} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {librosRecientes.slice(0, 6).map((libro, index) => (
               <motion.div
                 key={libro.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -415,7 +362,8 @@ export default function DashboardPage() {
                 </Card>
               </motion.div>
             ))}
-          </div>
+            </div>
+          )}
         </motion.div>
 
         {/* Quick Actions - Diferentes para Admin y Lector */}

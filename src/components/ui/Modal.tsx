@@ -38,7 +38,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
     <div className="fixed inset-0 z-50 flex items-center justify-center p-8">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
         onClick={onClose}
       />
 
@@ -46,6 +46,9 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
       <div
         className={cn(
           'relative bg-white border-2 border-black w-full',
+          'shadow-2xl',
+          'transition-all duration-300 ease-out',
+          'transform-gpu',
           sizes[size]
         )}
       >
@@ -54,7 +57,8 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
           <h2 className="text-3xl font-semibold">{title}</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 transition-colors"
+            className="p-2 hover:bg-gray-100 active:bg-gray-200 transition-all duration-200 rounded-lg hover:scale-110 active:scale-95 cursor-pointer"
+            aria-label="Cerrar modal"
           >
             <X className="w-6 h-6" />
           </button>
