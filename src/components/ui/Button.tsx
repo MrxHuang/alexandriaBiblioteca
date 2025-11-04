@@ -14,7 +14,7 @@ export function Button({
   children,
   ...props
 }: ButtonProps) {
-  const baseStyles = 'font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group';
+  const baseStyles = 'font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer relative overflow-hidden group';
   
   const variants = {
     primary: 'bg-black text-white hover:bg-gray-800 active:bg-gray-900 hover:scale-[1.02] active:scale-[0.98]',

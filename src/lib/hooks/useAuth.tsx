@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthContextType, LoginCredentials, Usuario, UserRole } from '../types';
 import { authService } from '../services/auth.service';
+import { firebaseAuthService } from '../services/firebaseAuth.service';
 import { useRouter } from 'next/navigation';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,7 +37,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = () => {
+  const loginWithGoogle = async (role: UserRole = UserRole.LECTOR) => {
+    try {
+      const response = await firebaseAuthService.signInWithGoogle(role);
+      setUser(response.usuario);
+      setToken(response.token);
+      router.push('/dashboard');
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await firebaseAuthService.signOut();
+    } catch (error) {
+      console.error('Error signing out from Firebase:', error);
+    }
     authService.logout();
     setUser(null);
     setToken(null);
@@ -47,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     token,
     login,
+    loginWithGoogle,
     logout,
     isAuthenticated: !!token,
     isAdmin: user?.rol === UserRole.ADMIN,

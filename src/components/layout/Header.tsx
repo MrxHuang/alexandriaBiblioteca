@@ -1,71 +1,102 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { Button } from '../ui/Button';
-import { BookOpen, LogOut, User } from 'lucide-react';
+import CardNav from '../ui/CardNav';
+import { BookOpen } from 'lucide-react';
 
 export function Header() {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, isAdmin, isLector } = useAuth();
+
+  // Si no está autenticado, no mostrar navegación
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  // Opciones para ADMIN
+  const adminItems = [
+    {
+      label: 'Catálogo',
+      bgColor: '#0D0716',
+      textColor: '#fff',
+      links: [
+        { label: 'Libros', href: '/libros', ariaLabel: 'Ver catálogo de libros' },
+        { label: 'Autores', href: '/autores', ariaLabel: 'Ver lista de autores' },
+      ],
+    },
+    {
+      label: 'Préstamos',
+      bgColor: '#170D27',
+      textColor: '#fff',
+      links: [
+        { label: 'Todos los préstamos', href: '/prestamos', ariaLabel: 'Ver préstamos' },
+      ],
+    },
+    {
+      label: 'Sistema',
+      bgColor: '#271E37',
+      textColor: '#fff',
+      links: [
+        { label: 'Dashboard', href: '/dashboard', ariaLabel: 'Ir al dashboard' },
+      ],
+    },
+  ];
+
+  // Opciones para LECTOR
+  const lectorItems = [
+    {
+      label: 'Catálogo',
+      bgColor: '#0D0716',
+      textColor: '#fff',
+      links: [
+        { label: 'Libros', href: '/libros', ariaLabel: 'Ver catálogo de libros' },
+        { label: 'Autores', href: '/autores', ariaLabel: 'Ver lista de autores' },
+      ],
+    },
+    {
+      label: 'Mis Préstamos',
+      bgColor: '#170D27',
+      textColor: '#fff',
+      links: [
+        { label: 'Ver préstamos', href: '/prestamos', ariaLabel: 'Ver mis préstamos' },
+        { label: 'Solicitar préstamo', href: '/libros', ariaLabel: 'Solicitar un préstamo' },
+      ],
+    },
+    {
+      label: 'Cuenta',
+      bgColor: '#271E37',
+      textColor: '#fff',
+      links: [
+        { label: 'Dashboard', href: '/dashboard', ariaLabel: 'Ir al dashboard' },
+        { label: 'Mi perfil', href: '/perfil', ariaLabel: 'Ver mi perfil' },
+      ],
+    },
+  ];
+
+  const items = isAdmin ? adminItems : lectorItems;
+
+  const logo = (
+    <div className="flex items-center space-x-2">
+      <BookOpen className="w-7 h-7 text-gray-900" strokeWidth={1.5} />
+      <span className="text-xl font-bold text-gray-900 tracking-tight">ALEXANDRIA</span>
+    </div>
+  );
 
   return (
-    <header className="border-b-2 border-gray-300 bg-white">
-      <div className="max-w-7xl mx-auto px-8 py-6">
-        <div className="flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center space-x-4 group">
-            <BookOpen className="w-10 text-gray-900 h-10" strokeWidth={1.5} />
-            <span className="text-3xl text-gray-900  font-bold tracking-tight">ALEXANDRIA</span>
-          </Link>
-
-          {isAuthenticated && (
-            <div className="flex items-center space-x-8">
-              <nav className="flex items-center space-x-8">
-                <Link 
-                  href="/dashboard" 
-                  className="text-lg text-gray-900 hover:text-black transition-colors"
-                >
-                  Dashboard
-                </Link>
-                <Link 
-                  href="/libros" 
-                  className="text-lg text-gray-900 hover:text-black transition-colors"
-                >
-                  Libros
-                </Link>
-                <Link 
-                  href="/autores" 
-                  className="text-lg text-gray-900 hover:text-black transition-colors"
-                >
-                  Autores
-                </Link>
-                <Link 
-                  href="/prestamos" 
-                  className="text-lg text-gray-900 hover:text-black transition-colors"
-                >
-                  Préstamos
-                </Link>
-              </nav>
-
-              <div className="flex items-center space-x-6 border-l-2 border-gray-300 pl-8">
-                <div className="flex items-center space-x-3">
-                  <User className="w-5 text-gray-900 h-5" />
-                  <span className="text-lg font-medium text-gray-900">{user?.nombre}</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={logout}
-                  className="flex items-center space-x-2"
-                >
-                  <LogOut className="w-5 h-5" />
-                  <span>Salir</span>
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+    <header className="relative min-h-[100px] bg-transparent">
+      <CardNav
+        logo={logo}
+        logoAlt="Alexandria Logo"
+        items={items}
+        baseColor="#fff"
+        menuColor="#000"
+        buttonBgColor="#111"
+        buttonTextColor="#fff"
+        ease="power3.out"
+        onLogout={logout}
+        userName={user?.nombre}
+        userRole={isAdmin ? 'Admin' : 'Lector'}
+      />
     </header>
   );
 }

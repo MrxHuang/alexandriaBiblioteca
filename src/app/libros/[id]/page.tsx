@@ -10,6 +10,7 @@ import { librosService } from '@/lib/services/libros.service';
 import { prestamosService } from '@/lib/services/prestamos.service';
 import { Libro } from '@/lib/types';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useToast } from '@/lib/hooks/useToast';
 import { BookOpen, Calendar, User } from 'lucide-react';
 
 export default function LibroDetailPage() {
@@ -19,6 +20,7 @@ export default function LibroDetailPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const { isAuthenticated, isLector, loading: authLoading, user } = useAuth();
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -46,17 +48,19 @@ export default function LibroDetailPage() {
     setCreating(true);
     try {
       await prestamosService.create({ libroId: libro.id, usuarioId: user.id });
-      alert('Préstamo solicitado con éxito');
-      router.push('/prestamos');
+      showSuccess('Préstamo solicitado con éxito');
+      setTimeout(() => {
+        router.push('/prestamos');
+      }, 1000);
     } catch (e) {
       console.error('Error creando préstamo', e);
       const anyErr = e as any;
       const message = anyErr?.response?.data?.message as string | undefined;
       if (message) {
         // Mensajes del backend: libro prestado o límite de préstamos
-        alert(message);
+        showError(message);
       } else {
-        alert('No se pudo crear el préstamo');
+        showError('No se pudo crear el préstamo');
       }
     } finally {
       setCreating(false);
@@ -67,39 +71,54 @@ export default function LibroDetailPage() {
   if (!libro) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <Header />
-      <main className="max-w-4xl mx-auto px-8 py-16">
+      <main className="max-w-4xl mx-auto px-8 pt-20 pb-16">
         <div className="mb-10">
           <h1 className="text-6xl font-bold mb-2">{libro.titulo}</h1>
           <p className="text-2xl text-gray-800">Detalles del libro</p>
         </div>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-white to-gray-50/50">
           <CardHeader>
-            <CardTitle>Información</CardTitle>
+            <CardTitle className="text-3xl font-bold">Información</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3 text-gray-800">
-                <User className="w-5 h-5" />
-                <span className="text-lg">
-                  {libro.autor ? `${libro.autor.nombre} ${libro.autor.apellido}` : `Autor ID ${libro.autorId}`}
-                </span>
+            <div className="space-y-5">
+              <div className="flex items-center space-x-4 text-gray-800">
+                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <User className="w-5 h-5 text-gray-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 font-medium">Autor</p>
+                  <span className="text-lg font-semibold">
+                    {libro.autor ? `${libro.autor.nombre} ${libro.autor.apellido}` : `Autor ID ${libro.autorId}`}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center space-x-3 text-gray-800">
-                <Calendar className="w-5 h-5" />
-                <span className="text-lg">{libro.anio}</span>
+              <div className="flex items-center space-x-4 text-gray-800">
+                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-gray-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 font-medium">Año de publicación</p>
+                  <span className="text-lg font-semibold">{libro.anio}</span>
+                </div>
               </div>
-              <div className="flex items-center space-x-3 text-gray-800">
-                <BookOpen className="w-5 h-5" />
-                <span className="text-lg">ISBN: {libro.isbn}</span>
+              <div className="flex items-center space-x-4 text-gray-800">
+                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-gray-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 font-medium">ISBN</p>
+                  <span className="text-lg font-mono font-semibold">{libro.isbn}</span>
+                </div>
               </div>
             </div>
 
             {isLector && (
-              <div className="mt-8">
-                <Button onClick={solicitarPrestamo} disabled={creating} size="lg">
+              <div className="mt-10 pt-8 border-t-2 border-gray-200">
+                <Button onClick={solicitarPrestamo} disabled={creating} size="lg" className="w-full">
                   {creating ? 'Solicitando…' : 'Solicitar préstamo'}
                 </Button>
               </div>

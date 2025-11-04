@@ -28,7 +28,8 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Handle 401 (Unauthorized) and 403 (Forbidden - token expired)
+    if (error.response?.status === 401 || error.response?.status === 403) {
       storage.clear();
       if (typeof window !== 'undefined') {
         window.location.href = '/login';

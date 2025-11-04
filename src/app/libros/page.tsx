@@ -12,6 +12,7 @@ import { librosService } from '@/lib/services/libros.service';
 import { autoresService } from '@/lib/services/autores.service';
 import { Libro, Autor } from '@/lib/types';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useToast } from '@/lib/hooks/useToast';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Pagination } from '@/components/ui/Pagination';
@@ -40,6 +41,7 @@ export default function LibrosPage() {
   });
   
   const { isAuthenticated, isAdmin, loading: authLoading } = useAuth();
+  const { showSuccess, showError } = useToast();
   const router = useRouter();
 
   useEffect(() => {
@@ -107,6 +109,12 @@ export default function LibrosPage() {
         params.search = searchTerm;
       }
       
+      // Cargar autores si no están cargados
+      if (autores.length === 0) {
+        const autoresData = await autoresService.getAllNoPagination();
+        setAutores(autoresData);
+      }
+      
       // Si hay filtro de autor, obtener libros por autor y luego filtrar
       let librosData;
       if (selectedAutorId) {
@@ -143,32 +151,24 @@ export default function LibrosPage() {
         };
       } else {
         // Sin filtro de autor, usar la API normal
-        const [librosResponse, autoresData] = await Promise.all([
-          librosService.getAll(params),
-          autoresService.getAllNoPagination(),
-        ]);
+        const librosResponse = await librosService.getAll(params);
         
         // Filtrar por año si está seleccionado
         let filteredContent = librosResponse.content;
         if (selectedAnio) {
           filteredContent = filteredContent.filter(libro => libro.anio === selectedAnio);
+          // Obtener total correcto cuando hay filtro de año
+          const allLibros = await librosService.getAllNoPagination();
+          const filteredAll = allLibros.filter(libro => libro.anio === selectedAnio);
+          librosData = {
+            ...librosResponse,
+            content: filteredContent,
+            totalElements: filteredAll.length,
+            totalPages: Math.ceil(filteredAll.length / pageSize),
+          };
+        } else {
+          librosData = librosResponse;
         }
-        
-        librosData = {
-          ...librosResponse,
-          content: filteredContent,
-          totalElements: selectedAnio 
-            ? filteredContent.length 
-            : librosResponse.totalElements,
-        };
-        
-        setAutores(autoresData);
-      }
-      
-      // Si no hay autores cargados, cargarlos
-      if (autores.length === 0) {
-        const autoresData = await autoresService.getAllNoPagination();
-        setAutores(autoresData);
       }
       
       setLibros(librosData.content);
@@ -186,14 +186,18 @@ export default function LibrosPage() {
     try {
       if (selectedLibro) {
         await librosService.update(selectedLibro.id, formData);
+        showSuccess('Libro actualizado con éxito');
       } else {
         await librosService.create(formData);
+        showSuccess('Libro creado con éxito');
       }
       setIsModalOpen(false);
       resetForm();
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving libro:', error);
+      const message = error?.response?.data?.message || 'Error al guardar el libro';
+      showError(message);
     }
   };
 
@@ -201,9 +205,12 @@ export default function LibrosPage() {
     if (confirm('¿Estás seguro de eliminar este libro?')) {
       try {
         await librosService.delete(id);
+        showSuccess('Libro eliminado con éxito');
         fetchData();
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error deleting libro:', error);
+        const message = error?.response?.data?.message || 'Error al eliminar el libro';
+        showError(message);
       }
     }
   };
@@ -274,41 +281,124 @@ export default function LibrosPage() {
             )}
           </div>
 
-          {/* Search Bar */}
-          <motion.form
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            onSubmit={handleSearch}
-            className="relative"
-          >
-            <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-600 pointer-events-none z-10" />
-            <input
-              type="text"
-              placeholder="Buscar por título, autor o ISBN..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-16 pr-24 py-6 text-xl bg-white border-2 border-gray-300 focus:border-gray-900 focus:outline-none transition-colors placeholder:text-gray-500 text-gray-900 font-medium"
-            />
-            {searchInput && (
-              <button
-                type="button"
-                onClick={handleSearchClear}
-                className="absolute right-16 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-                aria-label="Limpiar búsqueda"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-            <button
-              type="submit"
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
+          <div className="space-y-4">
+            {/* Search Bar */}
+            <motion.form
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              onSubmit={handleSearch}
+              className="relative"
             >
-              Buscar
-            </button>
-          </motion.form>
+              <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-600 pointer-events-none z-10" />
+              <input
+                type="text"
+                placeholder="Buscar por título, autor o ISBN..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full pl-16 pr-24 py-6 text-xl bg-white border-2 border-gray-300 focus:border-gray-900 focus:outline-none transition-colors placeholder:text-gray-500 text-gray-900 font-medium"
+              />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={handleSearchClear}
+                  className="absolute right-16 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                  aria-label="Limpiar búsqueda"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+              <button
+                type="submit"
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
+              >
+                Buscar
+              </button>
+            </motion.form>
+
+            {/* Filters */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="flex items-center gap-4 flex-wrap"
+            >
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-300 rounded-lg hover:border-gray-400 transition-colors cursor-pointer"
+              >
+                <Filter className="w-5 h-5 text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">Filtros</span>
+              </button>
+              
+              {(selectedAutorId || selectedAnio) && (
+                <button
+                  onClick={handleFilterClear}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 border-2 border-gray-300 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer text-sm font-medium text-gray-700"
+                >
+                  <X className="w-4 h-4" />
+                  Limpiar filtros
+                </button>
+              )}
+
+              {showFilters && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="w-full bg-white border-2 border-gray-200 rounded-lg p-6 space-y-4"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Filtro por Autor */}
+                    <div className="space-y-3">
+                      <label className="block text-sm font-semibold text-gray-900 uppercase tracking-wide">
+                        Filtrar por Autor
+                      </label>
+                      <select
+                        value={selectedAutorId || ''}
+                        onChange={(e) => {
+                          setSelectedAutorId(e.target.value ? parseInt(e.target.value) : null);
+                          setCurrentPage(0);
+                        }}
+                        className="w-full px-4 py-3 text-base bg-white border-2 border-gray-200 focus:border-gray-900 focus:outline-none transition-colors cursor-pointer"
+                      >
+                        <option value="">Todos los autores</option>
+                        {autores.map((autor) => (
+                          <option key={autor.id} value={autor.id}>
+                            {autor.nombre} {autor.apellido}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Filtro por Año */}
+                    <div className="space-y-3">
+                      <label className="block text-sm font-semibold text-gray-900 uppercase tracking-wide">
+                        Filtrar por Año
+                      </label>
+                      <select
+                        value={selectedAnio || ''}
+                        onChange={(e) => {
+                          setSelectedAnio(e.target.value ? parseInt(e.target.value) : null);
+                          setCurrentPage(0);
+                        }}
+                        className="w-full px-4 py-3 text-base bg-white border-2 border-gray-200 focus:border-gray-900 focus:outline-none transition-colors cursor-pointer"
+                      >
+                        <option value="">Todos los años</option>
+                        {availableYears.map((year) => (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          </div>
         </motion.div>
 
         {/* Books Grid */}

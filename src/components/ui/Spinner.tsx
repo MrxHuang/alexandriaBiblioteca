@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils/cn';
+import styles from './RocketLoader.module.css';
 
 interface SpinnerProps {
   size?: 'sm' | 'md' | 'lg';
@@ -8,27 +9,42 @@ interface SpinnerProps {
 
 export function Spinner({ size = 'md', className }: SpinnerProps) {
   const sizes = {
-    sm: 'w-6 h-6 border-2',
-    md: 'w-12 h-12 border-3',
-    lg: 'w-16 h-16 border-4',
+    sm: 'scale-50',
+    md: 'scale-100',
+    lg: 'scale-150',
   };
 
   return (
-    <div
-      className={cn(
-        'animate-spin rounded-full border-black border-t-transparent',
-        sizes[size],
-        className
-      )}
-    />
+    <div className={cn('relative', sizes[size], className)}>
+      <div className={styles.loader}>
+        <span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+        <div className={styles.base}>
+          <span></span>
+          <div className={styles.face}></div>
+        </div>
+      </div>
+      <div className={styles.longfazers}>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
   );
 }
 
 export function LoadingScreen() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-      <Spinner size="lg" />
-      <p className="mt-8 text-2xl text-gray-400">Cargando...</p>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-50 relative overflow-hidden">
+      <div className="relative w-64 h-64 flex items-center justify-center">
+        <Spinner size="md" />
+      </div>
+      <p className="mt-8 text-2xl font-semibold text-gray-900">Cargando...</p>
     </div>
   );
 }

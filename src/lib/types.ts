@@ -33,6 +33,8 @@ export interface Usuario {
   email: string;
   rol: UserRole;
   estado: UserStatus;
+  fechaCreacion?: string;
+  fechaActualizacion?: string;
 }
 
 export interface Prestamo {
@@ -69,7 +71,8 @@ export interface AuthContextType {
   user: Usuario | null;
   token: string | null;
   login: (credentials: LoginCredentials) => Promise<void>;
-  logout: () => void;
+  loginWithGoogle: (role?: UserRole) => Promise<void>;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isLector: boolean;

@@ -13,7 +13,9 @@ import { librosService } from '@/lib/services/libros.service';
 import { usuariosService } from '@/lib/services/usuarios.service';
 import { Libro, Prestamo, Usuario } from '@/lib/types';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useToast } from '@/lib/hooks/useToast';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 
 export default function PrestamosPage() {
   const [prestamos, setPrestamos] = useState<Prestamo[]>([]);
@@ -23,6 +25,7 @@ export default function PrestamosPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ libroId: 0, usuarioId: 0 });
   const { isAuthenticated, isAdmin, isLector, loading: authLoading, user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const router = useRouter();
 
   useEffect(() => {
@@ -66,28 +69,37 @@ export default function PrestamosPage() {
       await prestamosService.create({ libroId: formData.libroId, usuarioId });
       setIsModalOpen(false);
       setFormData({ libroId: 0, usuarioId: 0 });
+      showSuccess('Préstamo creado con éxito');
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating prestamo:', error);
+      const message = error?.response?.data?.message || 'Error al crear el préstamo';
+      showError(message);
     }
   };
 
   const handleDevolver = async (id: number) => {
     try {
       await prestamosService.devolverLibro(id);
+      showSuccess('Libro marcado como devuelto');
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error devolviendo libro:', error);
+      const message = error?.response?.data?.message || 'Error al devolver el libro';
+      showError(message);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm('¿Eliminar préstamo?')) {
+    if (confirm('¿Estás seguro de eliminar este préstamo?')) {
       try {
         await prestamosService.delete(id);
+        showSuccess('Préstamo eliminado con éxito');
         fetchData();
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error eliminando préstamo:', error);
+        const message = error?.response?.data?.message || 'Error al eliminar el préstamo';
+        showError(message);
       }
     }
   };
@@ -97,55 +109,94 @@ export default function PrestamosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-8 py-16">
-        <div className="mb-16">
+      <main className="max-w-7xl mx-auto px-8 pt-20 pb-16">
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-16"
+        >
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-6xl font-bold mb-4">Préstamos</h1>
               <p className="text-2xl text-gray-800">{prestamos.length} registros</p>
             </div>
             {isAdmin && (
-              <Button
-                size="lg"
-                onClick={() => setIsModalOpen(true)}
-                className="flex items-center space-x-3"
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <BookMarked className="w-6 h-6" />
-                <span>Nuevo Préstamo</span>
-              </Button>
+                <Button
+                  size="lg"
+                  onClick={() => setIsModalOpen(true)}
+                  className="flex items-center space-x-3"
+                >
+                  <BookMarked className="w-6 h-6" />
+                  <span>Nuevo Préstamo</span>
+                </Button>
+              </motion.div>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {prestamos.length === 0 ? (
-          <div className="text-center py-24">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="text-center py-24"
+          >
             <BookMarked className="w-24 h-24 mx-auto mb-6 text-gray-500" strokeWidth={1.5} />
             <p className="text-2xl text-gray-700">No hay préstamos</p>
-          </div>
+          </motion.div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {prestamos.map((p) => (
-              <Card key={p.id}>
-                <CardHeader>
-                  <CardTitle>Préstamo #{p.id}</CardTitle>
+            {prestamos.map((p, index) => (
+              <motion.div
+                key={p.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                whileHover={{ scale: 1.02 }}
+              >
+                <Card className="bg-gradient-to-br from-white to-gray-50/50 h-full flex flex-col">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-2xl font-bold">Préstamo #{p.id}</CardTitle>
+                    {p.devuelto ? (
+                      <span className="px-3 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded-full">
+                        Devuelto
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">
+                        Activo
+                      </span>
+                    )}
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-3 text-gray-800">
-                      <BookOpen className="w-5 h-5" />
-                      <span className="text-lg">{p.libro?.titulo ?? `Libro ID ${p.libroId}`}</span>
+                <CardContent className="flex-1 flex flex-col">
+                  <div className="space-y-4 flex-1">
+                    <div className="flex items-center space-x-3 text-gray-700">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center">
+                        <BookOpen className="w-4 h-4 text-gray-600" />
+                      </div>
+                      <span className="text-base font-medium">{p.libro?.titulo ?? `Libro ID ${p.libroId}`}</span>
                     </div>
-                    <div className="flex items-center space-x-3 text-gray-800">
-                      <User className="w-5 h-5" />
-                      <span className="text-lg">{p.usuario?.nombre ?? `Usuario ID ${p.usuarioId}`}</span>
+                    <div className="flex items-center space-x-3 text-gray-700">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center">
+                        <User className="w-4 h-4 text-gray-600" />
+                      </div>
+                      <span className="text-base font-medium">{p.usuario?.nombre ?? `Usuario ID ${p.usuarioId}`}</span>
                     </div>
-                    <div className="flex items-center space-x-3 text-gray-800">
-                      <CalendarCheck2 className="w-5 h-5" />
-                      <span className="text-lg">
-                        {new Date(p.fechaPrestamo).toLocaleDateString()} {p.devuelto ? `· Devuelto: ${p.fechaDevolucion ? new Date(p.fechaDevolucion).toLocaleDateString() : ''}` : '· Activo'}
+                    <div className="flex items-center space-x-3 text-gray-700">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center">
+                        <CalendarCheck2 className="w-4 h-4 text-gray-600" />
+                      </div>
+                      <span className="text-base">
+                        {new Date(p.fechaPrestamo).toLocaleDateString()} {p.devuelto && p.fechaDevolucion && `· Devuelto: ${new Date(p.fechaDevolucion).toLocaleDateString()}`}
                       </span>
                     </div>
 
@@ -174,6 +225,7 @@ export default function PrestamosPage() {
                   </div>
                 </CardContent>
               </Card>
+              </motion.div>
             ))}
           </div>
         )}
